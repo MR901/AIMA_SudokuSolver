@@ -1,34 +1,34 @@
-# Note: Implementation of naked twins strategy and diagonal constraint propagation
-# based on Udacity AIND 'Solving a Sudoku using AI' lecture notes
+# project1 - sudoku Solver
 
-# encoding the board
+## encoding the board
 rows = 'ABCDEFGHI'
 cols = '123456789'
 
-
-# helper function to form a list of all the possible concatenations of a letter s in
-# string a with a letter t in string b.
+## A function to form a list of all the possible concatenations of a letter s in string a with a letter t in string b.
 def cross(a, b):
     return [s+t for s in a for t in b]
 
-# create the labels of all the boxes
+## Creating the address of all the boxes eg. A1, B2, B3, G8 -- > address for the box
 boxes = cross(rows, cols)
-# construct a list of units, where each unit is a list of labels of a row
+
+## construct a list of units (areas, conditon to satify in addresses)
+## addresses of a row
 row_units = [cross(r, cols) for r in rows]
-# construct a list of units, where each unit is a list of labels of a column
+##  addresses of a column
 column_units = [cross(rows, c) for c in cols]
-# construct a list of units, where each unit is a list of labels of a 3x3 square
+## addresses of a 3x3 square
 square_units = [cross(rs, cs) for rs in ('ABC', 'DEF', 'GHI') for cs in ('123', '456', '789')]
-# construct a list of units, where each unit is a list of labels of a diagonal
+##  addresses of a diagonal
 diag_units = [[r + c for r, c in zip(rows, cols)], [r + c for r, c in zip(rows, cols[::-1])]]
-# construct an overall list of all the units above
+## Constructing overall list containing all the units generated above
 unitlist = row_units + column_units + square_units + diag_units
-# construct a dictionary for unitlist,
-# where key is any box and value is a list of all the lists of units that contain that box
+
+## Constructing a dictionary for unitlist,
+## where key is any box and value is a list of all the lists of units that contain that box
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
-# construct a dictionary of peers,
-# where key is any box and value is a list of all the peers of that box,
-# (all the peers from row column and square units)
+
+## Construct a dictionary of peers,
+## where key is any box and value is a list of all the peers of that box (all the peers from row column and square units)
 peers = dict((s, set(sum(units[s], [])) - set([s])) for s in boxes)
 
 assignments = []
@@ -45,10 +45,12 @@ def assign_value(values, box, value):
     return values
 
 
-""" 'assignments' stores a trail of board changes.
+""" 
+'assignments' stores a trail of board changes.
 visualize filters these assignments to avoid changes involving no actual board value changes.
 Then it's played back in the pygame.
-This provides a visual simulation of the game as you make board changes using your algorithm."""
+This provides a visual simulation of the game as you make board changes using your algorithm.
+"""
 
 
 def naked_twins(values):
@@ -171,16 +173,22 @@ def reduce_puzzle(values):
     while not stalled:
         # Check how many boxes have a determined value
         solved_values_before = len([box for box in values.keys() if len(values[box]) == 1])
+        
         # Use the Eliminate Strategy
         values = eliminate(values)
+        
         # Use the Only Choice Strategy
         values = only_choice(values)
+        
         # Use the Naked Twins Strategy
         values = naked_twins(values)
+        
         # Check how many boxes have a determined value, to compare
         solved_values_after = len([box for box in values.keys() if len(values[box]) == 1])
+        
         # If no new values were added, stop the loop.
         stalled = solved_values_before == solved_values_after
+        
         # Sanity check, return False if there is a box with zero available values:
         if len([box for box in values.keys() if len(values[box]) == 0]):
             return False
@@ -188,16 +196,21 @@ def reduce_puzzle(values):
 
 
 def search(values):
-    """ Using depth-first search and propagation, try all possible values. """
-    # First, reduce the puzzle using the previous function
+    """ 
+    Using depth-first search and propagation, try all possible values. 
+    """
+    
+    # First, reducing puzzle using the previous function
     values = reduce_puzzle(values)
     if values is False:
-        return False  # Failed earlier
+        return False  # if Failed earlier
     if all(len(values[s]) == 1 for s in boxes):
-        return values  # Solved!
-    # Choose one of the unfilled squares with the fewest possibilities
+        return values  # if Solved
+    
+    # Choose one of the unfilled squares with the fewest possibilities, creating/using the heieracrchy of possibilities
     n, s = min((len(values[s]), s) for s in boxes if len(values[s]) > 1)
-    # Now use recurrence to solve each one of the resulting sudokus, and
+    
+    # Now use recurrence to solve each one of the resulting sudokus,
     for value in values[s]:
         new_sudoku = values.copy()
         # new_sudoku[s] = value
@@ -223,13 +236,16 @@ def solve(grid):
 
 
 if __name__ == '__main__':
+    
+    from utils import *
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
+    display(grid2values(diag_sudoku_grid))
     solution = solve(diag_sudoku_grid)
-    # display(solution)
-
+    display(solution)
+    
     try:
-        from visualize import visualize_assignments
-        visualize_assignments(assignments)
+        import PySudoku ## trying the visualization 
+        PySudoku.play(grid2values(diag_sudoku_grid), solution, history) ## Not sure about history?? but still it's working
 
     except SystemExit:
         pass
